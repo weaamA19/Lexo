@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lexo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<nav>
+  <div class="brand">
+    <img src="logo.png" alt="Lexo" class="brand-logo" />
+  </div>
+  <div class="switcher">
+    <button id="btn-ar" class="active" onclick="switchClass('ar')">🇸🇦 Arabic Class</button>
+    <button id="btn-en"               onclick="switchClass('en')">🇬🇧 English Class</button>
+  </div>
+</nav>
+
+<!-- ══ ARABIC CLASS ══ -->
+<div id="ar-class" class="wrap">
+  <div class="tabs" id="ar-tabs">
+    <button class="active" onclick="switchTab('ar',1)">✏️ Level 1 — Letters</button>
+    <button onclick="switchTab('ar',2)">📖 Level 2 — Words</button>
+    <button onclick="switchTab('ar',3)">💬 Level 3 — Sentences</button>
+    <button onclick="switchTab('ar',4)">📝 Level 4 — Paragraphs</button>
+    <button onclick="switchTab('ar',5)">✍️ Level 5 — Writing</button>
+  </div>
+  <div class="cbar">
+    <div class="cbar-l">
+      <div class="sess-num" id="ar-sess">0</div>
+      <div class="cmeta">
+        <div class="ct">Today's Score</div>
+        <div class="cs">correct this session</div>
+      </div>
+    </div>
+    <div class="cbar-r"><button onclick="doRestart('ar')">↺ Restart Level</button></div>
+  </div>
+  <div class="prow">
+    <span class="plabel" id="ar-prog-lbl">0 / 0</span>
+    <div class="ptrack"><div class="pfill" id="ar-pfill" style="width:0%"></div></div>
+  </div>
+  <div class="lvl-hdr">
+    <h2 id="ar-hdr-title"></h2>
+    <p  id="ar-hdr-desc"></p>
+  </div>
+  <div class="stage" id="ar-stage"></div>
+  <div class="skip-row" id="ar-skip-row">
+    <button class="skip-btn" onclick="advance('ar', false)">→ Skip (not correct)</button>
+  </div>
+</div>
+
+<!-- ══ ENGLISH CLASS ══ -->
+<div id="en-class" class="wrap hidden">
+  <div class="tabs" id="en-tabs">
+    <button class="active" onclick="switchTab('en',1)">✏️ Level 1 — Letters</button>
+    <button onclick="switchTab('en',2)">📖 Level 2 — Words</button>
+    <button onclick="switchTab('en',3)">💬 Level 3 — Sentences</button>
+    <button onclick="switchTab('en',4)">📝 Level 4 — Paragraphs</button>
+    <button onclick="switchTab('en',5)">✍️ Level 5 — Writing</button>
+  </div>
+  <div class="cbar">
+    <div class="cbar-l">
+      <div class="sess-num" id="en-sess">0</div>
+      <div class="cmeta">
+        <div class="ct">Today's Score</div>
+        <div class="cs">correct this session</div>
+      </div>
+    </div>
+    <div class="cbar-r"><button onclick="doRestart('en')">↺ Restart Level</button></div>
+  </div>
+  <div class="prow">
+    <span class="plabel" id="en-prog-lbl">0 / 0</span>
+    <div class="ptrack"><div class="pfill" id="en-pfill" style="width:0%"></div></div>
+  </div>
+  <div class="lvl-hdr">
+    <h2 id="en-hdr-title"></h2>
+    <p  id="en-hdr-desc"></p>
+  </div>
+  <div class="stage" id="en-stage"></div>
+  <div class="skip-row" id="en-skip-row">
+    <button class="skip-btn" onclick="advance('en', false)">→ Skip (not correct)</button>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+// ════════════════════════════════════════════
+//  PERSISTED STATE  (localStorage)
+// ════════════════════════════════════════════
+const STORE = 'ld-v4';
+
+// seen[cls][lvl] = array of original data indices already shown in any past session
+let seen = { ar:{1:[],2:[],3:[],4:[],5:[]}, en:{1:[],2:[],3:[],4:[],5:[]} };
+
+try {
+  const s = JSON.parse(localStorage.getItem(STORE) || '{}');
+  if (s.seen) seen = s.seen;
+} catch(e) {}
+
+function persist() {
+  localStorage.setItem(STORE, JSON.stringify({ seen }));
+}
+
+// ════════════════════════════════════════════
+//  SESSION STATE  (reset every page load)
+// ════════════════════════════════════════════
+const curLvl   = { ar:1, en:1 };
+const queues   = { ar:{}, en:{} };   // shuffled index arrays
+const freshCnt = { ar:{}, en:{} };   // how many "new" items are at the front of the queue
+const pos      = { ar:{}, en:{} };   // current position in queue
+const sessCnt  = { ar:{1:0,2:0,3:0,4:0,5:0}, en:{1:0,2:0,3:0,4:0,5:0} };
+
+// ════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ════════════════════════════════════════════
+//  QUEUE BUILDER
+//  Unseen items first (shuffled), then already-seen items (shuffled).
+//  When every item has been seen, auto-reset for a fresh cycle.
+// ════════════════════════════════════════════
+function buildQueue(cls, lvl) {
+  const data = DATA[cls][LEVEL_META[cls][lvl].key];
+
+  if (!seen[cls])      seen[cls]      = {};
+  if (!seen[cls][lvl]) seen[cls][lvl] = [];
+
+  const seenSet = new Set(seen[cls][lvl]);
+
+  // Completed a full cycle — reset so items feel fresh again
+  if (seenSet.size >= data.length) {
+    seen[cls][lvl] = [];
+    persist();
+    seenSet.clear();
+  }
+
+  const fresh = [], done = [];
+  data.forEach((_, i) => (seenSet.has(i) ? done : fresh).push(i));
+
+  const freshShuffled = shuffle(fresh);
+  const doneShuffled  = shuffle(done);
+
+  queues[cls][lvl]   = [...freshShuffled, ...doneShuffled];
+  freshCnt[cls][lvl] = freshShuffled.length;
+  pos[cls][lvl]      = 0;
+  sessCnt[cls][lvl]  = 0;
+}
+
+// Mark a data index as seen (called when a card is displayed)
+function markSeen(cls, lvl, dataIdx) {
+  if (!seen[cls][lvl].includes(dataIdx)) {
+    seen[cls][lvl].push(dataIdx);
+    persist();
+  }
+}
+
+// ════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════
+function renderStage(cls, animEnter) {
+  const lvl     = curLvl[cls];
+  const q       = queues[cls][lvl];
+  const p       = pos[cls][lvl];
+  const data    = DATA[cls][LEVEL_META[cls][lvl].key];
+  const stage   = document.getElementById(`${cls}-stage`);
+  const skipRow = document.getElementById(`${cls}-skip-row`);
+  const meta    = LEVEL_META[cls][lvl];
+
+  // Update header
+  document.getElementById(`${cls}-hdr-title`).textContent = meta.label;
+  document.getElementById(`${cls}-hdr-desc`).textContent  = meta.desc;
+
+  // All done for this session
+  if (p >= q.length) {
+    stage.innerHTML = `
+      <div class="done-wrap">
+        <div class="done-trophy">🏆</div>
+        <div class="done-score">${sessCnt[cls][lvl]} / ${q.length}</div>
+        <div class="done-label">correct this session — well done!</div>
+        <button class="restart-btn" onclick="doRestart('${cls}')">🔄 Start Again</button>
+      </div>`;
+    skipRow.classList.add('hidden');
+    updateCounter(cls);
+    return;
+  }
+
+  skipRow.classList.remove('hidden');
+
+  const dataIdx = q[p];
+  markSeen(cls, lvl, dataIdx);          // record this item as seen
+  const item = data[dataIdx];
+  const isNew = p < freshCnt[cls][lvl]; // still in the "fresh" section of the queue
+
+  if (lvl === 5) {
+    const wordText = typeof item === 'string' ? item : item.t;
+    const wn = p + 1;
+    stage.innerHTML = `
+      <div class="write-card">
+        ${isNew ? `<div class="new-badge">✨ New word</div>` : ''}
+        <div class="w-label">Dictate this word to your student</div>
+        <div class="${cls==='ar' ? 'w-ar' : 'w-en'}">${wordText}</div>
+        <div class="w-pos">Word ${wn} of ${q.length}</div>
+        <button class="w-btn" id="${cls}-wbtn" onclick="onWriteCorrect('${cls}')">
+          ✓ Word ${wn} — Correct!
+        </button>
+      </div>`;
+  } else {
+    const inner = buildCardInner(cls, lvl, item, isNew);
+    stage.innerHTML = `<div class="card${animEnter ? ' anim-enter' : ''}" id="${cls}-card">${inner}</div>`;
+    document.getElementById(`${cls}-card`).addEventListener('click', () => advance(cls, true));
+  }
+
+  updateCounter(cls);
+}
+
+function buildCardInner(cls, lvl, item, isNew) {
+  const newBadge = isNew ? '<div class="new-badge">✨ New</div>' : '';
+  const hint     = '<div class="card-hint">Tap when correct ✓</div>';
+
+  if (cls === 'ar') {
+    if (lvl===1) return `${newBadge}${hint}<div class="ar-ltr">${item.t}</div><div class="ar-sub">${item.s}</div>`;
+    if (lvl===2) return `${newBadge}${hint}<div class="ar-word">${item}</div>`;
+    if (lvl===3) return `${newBadge}${hint}<div class="ar-sent">${item}</div>`;
+    return `${newBadge}${hint}<div class="ar-para">${item.replace(/\n/g,'<br>')}</div>`;
+  } else {
+    if (lvl===1) return `${newBadge}${hint}<div class="en-ltr">${item.t}</div><div class="en-sub">${item.s}</div>`;
+    if (lvl===2) return `${newBadge}${hint}<div class="en-word">${item}</div>`;
+    if (lvl===3) return `${newBadge}${hint}<div class="en-sent">${item}</div>`;
+    return `${newBadge}${hint}<div class="en-para">${item.replace(/\n/g,'<br>')}</div>`;
+  }
+}
+
+// ════════════════════════════════════════════
+//  ADVANCE  (correct tap or skip)
+// ════════════════════════════════════════════
+let advancing = false;
+
+function advance(cls, correct) {
+  if (advancing) return;
+  const lvl = curLvl[cls];
+
+  if (correct) {
+    sessCnt[cls][lvl]++;
+    updateCounter(cls);
+  }
+
+  // Writing level: no swipe animation
+  if (lvl === 5) {
+    pos[cls][lvl]++;
+    renderStage(cls, false);
+    return;
+  }
+
+  const card = document.getElementById(`${cls}-card`);
+  if (!card) { pos[cls][lvl]++; renderStage(cls, true); return; }
+
+  advancing = true;
+  card.classList.remove('anim-enter'); // prevent enter-animation's animationend firing early
+  card.classList.add(correct ? 'anim-exit-correct' : 'anim-exit-skip');
+
+  card.addEventListener('animationend', function onExitEnd(e) {
+    // Only react to the exit animation, not any residual enter animation
+    if (e.animationName !== 'exitLeft' && e.animationName !== 'exitRight') return;
+    card.removeEventListener('animationend', onExitEnd);
+    pos[cls][lvl]++;
+    renderStage(cls, true);
+    advancing = false;
+  });
+}
+
+function onWriteCorrect(cls) {
+  const btn = document.getElementById(`${cls}-wbtn`);
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '✓ Correct!';
+    btn.style.background = 'linear-gradient(135deg, #059669, #047857)';
+  }
+  setTimeout(() => advance(cls, true), 380);
+}
+
+// ════════════════════════════════════════════
+//  COUNTER & PROGRESS
+// ════════════════════════════════════════════
+function updateCounter(cls) {
+  const lvl  = curLvl[cls];
+  const q    = queues[cls][lvl];
+  const p    = pos[cls][lvl];
+  const fc   = freshCnt[cls][lvl] || 0;
+
+  document.getElementById(`${cls}-sess`).textContent = sessCnt[cls][lvl];
+
+  const pct = q.length ? Math.round(p / q.length * 100) : 0;
+  document.getElementById(`${cls}-pfill`).style.width = pct + '%';
+
+  // Show how many NEW items are still ahead in the queue
+  const newLeft = Math.max(0, fc - p);
+  let label = `${p} / ${q.length}`;
+  if (newLeft > 0) label += `  ·  ✨ ${newLeft} new`;
+  document.getElementById(`${cls}-prog-lbl`).textContent = label;
+}
+
+// ════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════
+function switchClass(cls) {
+  document.body.classList.toggle('en', cls === 'en');
+  document.getElementById('ar-class').classList.toggle('hidden', cls !== 'ar');
+  document.getElementById('en-class').classList.toggle('hidden', cls !== 'en');
+  document.getElementById('btn-ar').classList.toggle('active', cls === 'ar');
+  document.getElementById('btn-en').classList.toggle('active', cls === 'en');
+}
+
+function switchTab(cls, lvl) {
+  curLvl[cls] = lvl;
+  document.querySelectorAll(`#${cls}-tabs button`).forEach((b,i) => b.classList.toggle('active', i+1 === lvl));
+  renderStage(cls, true);
+}
+
+function doRestart(cls) {
+  buildQueue(cls, curLvl[cls]);
+  renderStage(cls, true);
+}
+
+// ════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════
+(function init() {
+  ['ar','en'].forEach(cls => {
+    for (let lvl = 1; lvl <= 5; lvl++) buildQueue(cls, lvl);
+  });
+  renderStage('ar', false);
+  renderStage('en', false);
+})();
+</script>
+</body>
+</html>

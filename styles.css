@@ -1,0 +1,187 @@
+/* ─────────────────────────────────────────────────────────
+   LEARNING DASHBOARD — Styles
+───────────────────────────────────────────────────────── */
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Poppins', sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #3b0764 0%, #6d28d9 55%, #a855f7 100%);
+  transition: background 0.5s ease;
+}
+body.en {
+  background: linear-gradient(135deg, #0c4a6e 0%, #0284c7 55%, #22d3ee 100%);
+}
+
+/* ── NAVBAR ── */
+nav {
+  position: sticky; top: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.85rem 2rem;
+  background: rgba(0,0,0,0.25); backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+.brand {
+  display: flex; align-items: center;
+}
+.brand-logo {
+  height: 42px;
+  width: auto;
+  object-fit: contain;
+}
+
+.switcher {
+  display: flex; gap: 4px;
+  background: rgba(255,255,255,0.12); border-radius: 50px; padding: 4px;
+}
+.switcher button {
+  padding: 0.4rem 1.3rem; border: none; border-radius: 50px; cursor: pointer;
+  font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 0.85rem;
+  background: transparent; color: rgba(255,255,255,0.65); transition: all 0.25s;
+}
+.switcher button.active { background: #fff; color: #3b0764; }
+body.en .switcher button.active { color: #0c4a6e; }
+
+/* ── LAYOUT ── */
+.wrap { max-width: 820px; margin: 0 auto; padding: 1.8rem 1.5rem 3rem; }
+
+/* ── TABS ── */
+.tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.3rem; }
+.tabs button {
+  padding: 0.48rem 1.1rem; border: 2px solid rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.1); border-radius: 50px; cursor: pointer;
+  color: rgba(255,255,255,0.72); font-weight: 600; font-size: 0.8rem;
+  font-family: 'Poppins', sans-serif; transition: all 0.2s;
+}
+.tabs button:hover { background: rgba(255,255,255,0.18); }
+.tabs button.active { background: #fff; border-color: #fff; color: #3b0764; }
+body.en .tabs button.active { color: #0c4a6e; }
+
+/* ── COUNTER BAR ── */
+.cbar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(0,0,0,0.22); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 18px;
+  padding: 0.9rem 1.4rem; margin-bottom: 1.2rem;
+}
+.cbar-l { display: flex; align-items: center; gap: 1rem; }
+.sess-num { font-size: 2.8rem; font-weight: 800; color: #fbbf24; line-height: 1; }
+.cmeta .ct { color: #fff; font-weight: 700; font-size: 0.88rem; }
+.cmeta .cs { color: rgba(255,255,255,0.5); font-size: 0.72rem; margin-top: 1px; }
+.cbar-r button {
+  padding: 0.42rem 0.85rem; border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.1); border-radius: 10px; color: #fff;
+  cursor: pointer; font-size: 0.75rem; font-weight: 600;
+  font-family: 'Poppins', sans-serif; transition: all 0.2s;
+}
+.cbar-r button:hover { background: rgba(255,255,255,0.2); }
+
+/* ── PROGRESS ── */
+.prow { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem; }
+.prow .plabel { color: rgba(255,255,255,0.65); font-size: 0.78rem; white-space: nowrap; }
+.ptrack { flex: 1; height: 6px; background: rgba(255,255,255,0.15); border-radius: 99px; overflow: hidden; }
+.pfill  { height: 100%; background: #fbbf24; border-radius: 99px; transition: width 0.4s ease; }
+
+/* ── LEVEL HEADER ── */
+.lvl-hdr { margin-bottom: 1rem; }
+.lvl-hdr h2 { color: #fff; font-size: 1.1rem; font-weight: 700; }
+.lvl-hdr p  { color: rgba(255,255,255,0.58); font-size: 0.77rem; margin-top: 2px; }
+
+/* ── STAGE ── */
+.stage {
+  min-height: 320px; display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden; margin-bottom: 1.2rem;
+}
+
+/* ── CARD (reading levels 1–4) ── */
+.card {
+  background: #fff; border-radius: 24px;
+  padding: 2.8rem 3rem; cursor: pointer; user-select: none;
+  box-shadow: 0 10px 50px rgba(0,0,0,0.25); text-align: center;
+  max-width: 680px; width: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.card:hover { box-shadow: 0 14px 60px rgba(0,0,0,0.32); }
+.card-hint { font-size: 0.7rem; color: #bbb; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 1rem; }
+
+/* Card animations */
+@keyframes exitLeft   { to   { transform: translateX(-115%) rotate(-8deg); opacity: 0; } }
+@keyframes exitRight  { to   { transform: translateX( 115%) rotate( 8deg); opacity: 0; } }
+@keyframes enterRight { from { transform: translateX( 115%) rotate( 8deg); opacity: 0; } }
+
+.card.anim-exit-correct { animation: exitLeft   0.32s cubic-bezier(.4,0,1,1) forwards; pointer-events: none; }
+.card.anim-exit-skip    { animation: exitRight  0.32s cubic-bezier(.4,0,1,1) forwards; pointer-events: none; }
+.card.anim-enter        { animation: enterRight 0.35s cubic-bezier(0,0,.2,1) forwards; }
+
+/* ── TEXT IN CARDS ── */
+.ar-ltr  { font-size: 5rem;   font-family: 'Amiri', serif; color: #4c1d95; font-weight: 700; line-height: 1; }
+.ar-sub  { font-size: 1rem;   font-family: 'Amiri', serif; color: #aaa; margin-top: 6px; }
+.ar-word { font-size: 3.5rem; font-family: 'Amiri', serif; color: #1e1b4b; direction: rtl; }
+.ar-sent { font-size: 1.7rem; font-family: 'Amiri', serif; color: #1e1b4b; direction: rtl; line-height: 1.8; text-align: right; }
+.ar-para { font-size: 1.2rem; font-family: 'Amiri', serif; color: #1e1b4b; direction: rtl; line-height: 2;   text-align: right; }
+
+.en-ltr  { font-size: 5.5rem; font-weight: 800; color: #0c4a6e; line-height: 1; }
+.en-sub  { font-size: 0.9rem; color: #aaa; margin-top: 6px; }
+.en-word { font-size: 3rem;   font-weight: 700; color: #0f172a; }
+.en-sent { font-size: 1.35rem; color: #0f172a; line-height: 1.75; }
+.en-para { font-size: 1.05rem; color: #0f172a; line-height: 1.9; text-align: left; }
+
+/* ── NEW BADGE on card ── */
+.new-badge {
+  font-size: 0.65rem; font-weight: 700; color: #7c3aed;
+  background: #ede9fe; border-radius: 99px;
+  padding: 0.2rem 0.6rem; margin-bottom: 0.8rem;
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+body.en .new-badge { color: #0369a1; background: #e0f2fe; }
+
+/* ── WRITING CARD (level 5) ── */
+.write-card {
+  background: #fff; border-radius: 24px; padding: 2.5rem 3rem;
+  box-shadow: 0 10px 50px rgba(0,0,0,0.25); text-align: center;
+  max-width: 680px; width: 100%;
+  display: flex; flex-direction: column; align-items: center;
+}
+@keyframes wfadeIn { from { opacity: 0; transform: translateY(12px); } }
+.write-card { animation: wfadeIn 0.3s ease; }
+.w-label { font-size: 0.7rem; color: #bbb; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 0.6rem; }
+.w-ar { font-size: 4rem;  font-family: 'Amiri', serif; color: #4c1d95; font-weight: 700; direction: rtl; }
+.w-en { font-size: 3rem;  font-weight: 800; color: #0c4a6e; }
+.w-pos { font-size: 0.8rem; color: #bbb; margin-top: 0.4rem; margin-bottom: 1.6rem; }
+.w-btn {
+  padding: 0.9rem 2.5rem; border: none; border-radius: 50px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff; font-family: 'Poppins', sans-serif;
+  font-weight: 700; font-size: 1rem; cursor: pointer;
+  box-shadow: 0 4px 18px rgba(16,185,129,0.4); transition: all 0.2s;
+}
+.w-btn:hover { transform: translateY(-2px); box-shadow: 0 7px 22px rgba(16,185,129,0.5); }
+.w-btn:active { transform: scale(0.97); }
+.w-btn:disabled { opacity: 0.7; transform: none; cursor: default; }
+
+/* ── SKIP BUTTON ── */
+.skip-row { display: flex; justify-content: center; }
+.skip-btn {
+  padding: 0.55rem 1.6rem; border: 2px solid rgba(255,255,255,0.28);
+  background: transparent; border-radius: 50px;
+  color: rgba(255,255,255,0.65); cursor: pointer; font-weight: 600;
+  font-size: 0.82rem; font-family: 'Poppins', sans-serif; transition: all 0.2s;
+}
+.skip-btn:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.5); }
+
+/* ── DONE SCREEN ── */
+.done-wrap { text-align: center; padding: 1rem; }
+.done-trophy { font-size: 4.5rem; margin-bottom: 0.8rem; }
+.done-score  { font-size: 2.5rem; font-weight: 800; color: #fbbf24; }
+.done-label  { color: rgba(255,255,255,0.75); font-size: 0.95rem; margin-top: 0.3rem; margin-bottom: 1.5rem; }
+.restart-btn {
+  padding: 0.75rem 2rem; border: none; border-radius: 50px;
+  background: #fff; color: #3b0764; font-family: 'Poppins', sans-serif;
+  font-weight: 700; font-size: 0.95rem; cursor: pointer;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.2); transition: all 0.2s;
+}
+body.en .restart-btn { color: #0c4a6e; }
+.restart-btn:hover { transform: translateY(-2px); box-shadow: 0 7px 24px rgba(0,0,0,0.25); }
+
+.hidden { display: none !important; }
